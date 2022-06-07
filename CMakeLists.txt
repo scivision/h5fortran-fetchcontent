@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(MUMPS_example
+project(H5fortran_example
 LANGUAGES C Fortran
 )
 
@@ -8,35 +8,30 @@ enable_testing()
 
 include(FetchContent)
 
+option(h5fortran_BUILD_TESTING "h5fortran internal tests")
+
 set(CMAKE_TLS_VERIFY true)
-set(FETCHCONTENT_UPDATES_DISCONNECTED_MUMPSUPSTREAM true)
+set(FETCHCONTENT_UPDATES_DISCONNECTED_H5FORTRAN true)
 
 # --- auto-ignore build directory
 if(NOT EXISTS ${PROJECT_BINARY_DIR}/.gitignore)
   file(WRITE ${PROJECT_BINARY_DIR}/.gitignore "*")
 endif()
 
-# --- build MUMPS
+# --- build h5fortran (requires HDF5 library)
 
-find_package(MPI COMPONENTS C Fortran REQUIRED)
-
-FetchContent_Declare(MUMPSupstream
-  GIT_REPOSITORY https://github.com/scivision/mumps.git
-  GIT_TAG v5.5.0.0
+FetchContent_Declare(h5fortran
+GIT_REPOSITORY https://github.com/geospace-code/h5fortran.git
+GIT_TAG v4.6.3
 )
 
-FetchContent_MakeAvailable(MUMPSupstream)
+FetchContent_MakeAvailable(H5FORTRAN)
 
-# Example C and Fortran main programs using MUMPS
+file(MAKE_DIRECTORY ${h5fortran_BINARY_DIR}/include)
+# avoids race condition on first configure
 
-add_executable(c_mumps src/d_simple.c)
-target_link_libraries(c_mumps PRIVATE MUMPS::MUMPS MPI::MPI_C)
-add_test(NAME MUMPS_C
-COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2 $<TARGET_FILE:c_mumps>
-)
+# Example main program using h5fortran
 
-add_executable(fortran_mumps src/d_simple.f90)
-target_link_libraries(fortran_mumps PRIVATE MUMPS::MUMPS MPI::MPI_Fortran)
-add_test(NAME MUMPS_Fortran
-COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2 $<TARGET_FILE:fortran_mumps>
-)
+add_executable(demo app/main.f90)
+target_link_libraries(demo PRIVATE h5fortran::h5fortran)
+add_test(NAME DemoH5fortran COMMAND demo)
